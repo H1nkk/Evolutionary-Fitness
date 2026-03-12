@@ -6,8 +6,6 @@
 * Проверка полученных результатов;
 * Визуализация результатов.
 
-<img width="932" height="127" alt="image" src="https://github.com/user-attachments/assets/57f08e48-9347-4e4d-8514-333fc853e277" />
-
 $$
 z_1' = r z_1 + h_1 z_1^2 + s_1 z_2 z_1 (1 + b_1 z_1 + a_1 z_2) - s_2 z_2 z_1 (1 + b_2 z_2 + a_2 z_1) - z_1 (q z_1 + p z_2)
 $$
