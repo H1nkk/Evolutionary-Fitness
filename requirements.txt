@@ -2,6 +2,7 @@
 
 # Data generation
 numpy
+scipy
 
 # Machine learning
 scikit-learn
