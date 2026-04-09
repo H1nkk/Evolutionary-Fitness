@@ -11,6 +11,8 @@ class Parameters:
     a2 : float
     b1 : float
     b2 : float
+    z1_0 : float
+    z2_0 : float
     r : float
     p : float
     q : float
@@ -69,13 +71,12 @@ def solve_population_equation(params : Parameters) -> tuple[float, float]:
     global_iteration_counter = 0
     
     # Set initial conditions
-    z1_0 = 1.0  # initial value for z1
-    z2_0 = 1.0  # initial value for z2
-    z0 = [z1_0, z2_0]
+
+    z0 = [params.z1_0 , params.z2_0]
 
     # Set time span
     t_start = 0
-    t_end = 1
+    t_end = 2
     t_span = (t_start, t_end)
 
     # Solve the system
@@ -113,9 +114,9 @@ if __name__  == "__main__":
             if line.startswith('#'): continue
             
             # h1 | h2 | s1 | s2 | a1 | a2 | b1 | b2
-            h1, h2, s1, s2, a1, a2, b1, b2 = [float(i) for i in line.split('|')]
+            h1, h2, s1, s2, a1, a2, b1, b2, z1_0, z2_0 = [float(i) for i in line.split('|')]
             
-            params = Parameters(h1, h2, s1, s2, a1, a2, b1, b2, r, p, q)
+            params = Parameters(h1, h2, s1, s2, a1, a2, b1, b2, z1_0, z2_0, r, p, q)
             
             global_iteration_counter = 0
             try:
