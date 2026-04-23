@@ -9,7 +9,7 @@ def generate_learning_data(num_entries):
     p = 0.3
     q = 0.3
     
-    with open("Data/LearningData.txt", 'w') as output:
+    with open("Data/LearningData2.txt", 'w') as output:
         output.write("# Winner ID (0 or 1) | h1 | h2 | s1 | s2 | a1 | a2 | b1 | b2 | z1_0 | z2_0 \n")
         
         generate_test_data(num_entries * 2)
@@ -41,4 +41,4 @@ def generate_learning_data(num_entries):
         
 # Script
 if __name__  == "__main__":
-    generate_learning_data(1000)
+    generate_learning_data(5000)
