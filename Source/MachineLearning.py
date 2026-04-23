@@ -60,7 +60,7 @@ def get_lambdas(X_train, y_train, X_test, y_test):
     
 if __name__ == "__main__":
     
-    X_train, y_train, X_test, y_test = get_data("Data/LearningData2.txt", 150)
+    X_train, y_train, X_test, y_test = get_data("Data/LearningData.txt", 500)
 
     lambdas = get_lambdas(X_train, y_train, X_test, y_test)
 
