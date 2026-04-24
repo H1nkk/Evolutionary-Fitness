@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 from sklearn.metrics import accuracy_score, classification_report
 
 def make_poly_features(df, suffix='1'):
@@ -45,15 +45,11 @@ def get_data(path : str, test_part : int) -> tuple:
     return X_train, y_train, X_test, y_test
     
 def get_lambdas(X_train, y_train, X_test, y_test):
-    model = LogisticRegression(C=1.0, random_state=42)
+    model = LinearSVC(C=1.0, random_state=42, max_iter=10000)
     model.fit(X_train, y_train)
-
-    # Предсказания и оценка
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
     print(f"\nТочность на тестовых данных: {accuracy:.3f}")
-    
-    # Коэффициенты
     lambdas = model.coef_[0]
     return lambdas
     
