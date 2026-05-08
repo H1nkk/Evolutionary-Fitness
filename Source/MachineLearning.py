@@ -131,7 +131,7 @@ def plot_decision_boundary_pca(model, X_train, y_train):
 
 if __name__ == "__main__":
     os.makedirs("Plots", exist_ok=True)
-    X_train, y_train, X_test, y_test = get_data("Data/LearningData.txt", 500)
+    X_train, y_train, X_test, y_test = get_data("Data/LearningData2.txt", 500)
 
     model, lambdas = get_lambdas(X_train, y_train, X_test, y_test)
 
