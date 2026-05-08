@@ -1,8 +1,3 @@
-"""
-Simulation of a two-player dynamical system with phase portrait
-and SVM-based decision boundary visualization.
-"""
-
 from __future__ import annotations
 
 import traceback
@@ -489,7 +484,7 @@ def main() -> None:
 
     # --- time-series + trajectory ---
     print("\nBuilding trajectory …")
-    plot_trajectory(params, t_max=100.0, n_steps=5000)
+    #plot_trajectory(params, t_max=100.0, n_steps=5000)
 
     # --- decision boundary ---
     print("\nBuilding J1 = J2 decision boundary …")
