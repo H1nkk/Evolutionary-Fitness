@@ -244,7 +244,7 @@ def plot_phase_portrait(
 # ---------------------------------------------------------------------------
 
 def _build_features(z: float, h: float, s: float, a: float, b: float) -> np.ndarray:
-    """Return the 15-dimensional feature vector φ(z) for one player."""
+    """Return the 25-dimensional feature vector φ(z) for one player."""
     return np.array([
         z,
         h * z,
@@ -261,6 +261,16 @@ def _build_features(z: float, h: float, s: float, a: float, b: float) -> np.ndar
         s * b * z,
         s * a * z,
         a * b * z,
+        h*z**2, 
+        s*z**2, 
+        a*z**2, 
+        b*z**2, 
+        z**2,   
+        h*z**3, 
+        s*z**3, 
+        a*z**3, 
+        b*z**3, 
+        z**3
     ])
 
 
@@ -404,21 +414,31 @@ def plot_trajectory(
 # ---------------------------------------------------------------------------
 
 LAMBDAS = np.array([
-    -1.556934,  # z
-    -0.262720,  # h·z
-    -1.357067,  # s·z
-    -0.776056,  # b·z
-     0.060307,  # a·z
-    -0.747607,  # h²·z
-    -2.852803,  # s²·z
-     0.722513,  # b²·z
-    -0.368630,  # a²·z
-    -0.682593,  # h·s·z
-    -0.147188,  # h·b·z
-     0.853914,  # h·a·z
-    -1.417331,  # s·b·z
-    -2.272474,  # s·a·z
-    -1.608936,  # a·b·z
+    -2.757248,
+    -0.584375,
+    -0.816353,
+    -0.181098,
+    -0.559748,
+    -0.427462,
+    -1.505800,
+    0.460905,
+    -0.102692,
+    -0.403703,
+    -0.323300,
+    0.388930,
+    -0.736412,
+    -1.010930,
+    -0.684573,
+    0.521263,
+    0.147172,
+    0.483578,
+    0.365665,
+    -0.073846,
+    0.291560,
+    0.537558,
+    -0.173606,
+    1.152286,
+    0.277632
 ])
 
 DEFAULT_PARAMS = SystemParams(
@@ -435,7 +455,7 @@ DEFAULT_PARAMS = SystemParams(
 
 def main() -> None:
     file_path = Path("Data/TestData.txt")
-    selected_line = 21 # 1 -> 3 в файле, 21 -> 23 в файле...: из номера строки в файле надо вычитать 2.
+    selected_line = 442 # 1 -> 3 в файле, 21 -> 23 в файле...: из номера строки в файле надо вычитать 2.
 
     # --- load parameters ---
     params = DEFAULT_PARAMS

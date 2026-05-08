@@ -5,6 +5,7 @@ from sklearn.svm import LinearSVC
 from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.model_selection import learning_curve
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 import os
 
 def make_poly_features(df, suffix='1'):
@@ -31,6 +32,21 @@ def make_poly_features(df, suffix='1'):
     features['s*a*z'] = s * a * z
     features['a*b*z'] = a * b * z
 
+    features['h*z^2'] = h * z**2
+    features['s*z^2'] = s * z**2
+    features['a*z^2'] = a * z**2
+    features['b*z^2'] = b * z**2
+    features['z^2'] = z**2
+
+    features['h*z^3'] = h * z**3
+    features['a*z^3'] = a * z**3
+    features['b*z^3'] = b * z**3
+    features['s*z^3'] = s * z**3
+    features['z^3'] = z**3
+
+
+
+
     return pd.DataFrame(features)
 
 def get_data(path : str, test_part : int) -> tuple:
@@ -39,6 +55,12 @@ def get_data(path : str, test_part : int) -> tuple:
     poly1 = make_poly_features(data, suffix='1')
     poly2 = make_poly_features(data, suffix='2')
     X_diff = poly1 - poly2 
+    
+    scaler = StandardScaler()
+    X_diff = pd.DataFrame(
+        scaler.fit_transform(X_diff),
+        columns=X_diff.columns
+    )
     y = data['Winner ID'].values
     
     X_train = X_diff.iloc[test_part:]
@@ -61,7 +83,9 @@ def plot_lambdas(lambdas):
     feature_names = [
         "z", "h*z", "s*z", "b*z", "a*z",
         "h^2*z", "s^2*z", "b^2*z", "a^2*z",
-        "h*s*z", "h*b*z", "h*a*z", "s*b*z", "s*a*z", "a*b*z"
+        "h*s*z", "h*b*z", "h*a*z", "s*b*z", "s*a*z", "a*b*z",
+        "h*z^2", "s*z^2", "a*z^2", "b*z^2", "z^2",   
+        "h*z^3", "s*z^3", "a*z^3", "b*z^3", "z^3"
     ]
 
     colors = ['steelblue' if v >= 0 else 'tomato' for v in lambdas]
@@ -94,7 +118,8 @@ def plot_decision_boundary_pca(model, X_train, y_train):
     plt.contour(xx, yy, Z, levels=0, colors='black', linewidths=1.5) 
     plt.contour(xx, yy, Z, levels=[-1, 1], colors='black', linewidths=0.8, linestyles='--')
 
-    plt.scatter(X_2d[y_train == 0, 0], X_2d[y_train == 0, 1], c='tomato', s=10, alpha=0.5)
+    plt.scatter(X_2d[y_train == 0, 0], X_2d[y_train == 0, 1], c='tomato', s=10, alpha=0.5) # why not == -1?
+    
     plt.scatter(X_2d[y_train == 1, 0], X_2d[y_train == 1, 1], c='steelblue', s=10, alpha=0.5)
 
     plt.xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.1f}%)")
@@ -115,7 +140,9 @@ if __name__ == "__main__":
     feature_names = [
         "z", "h*z", "s*z", "b*z", "a*z",
         "h^2*z", "s^2*z", "b^2*z", "a^2*z",
-        "h*s*z", "h*b*z", "h*a*z", "s*b*z", "s*a*z", "a*b*z"
+        "h*s*z", "h*b*z", "h*a*z", "s*b*z", "s*a*z", "a*b*z",
+        "h*z^2", "s*z^2", "a*z^2", "b*z^2", "z^2",   
+        "h*z^3", "s*z^3", "a*z^3", "b*z^3", "z^3"
     ]
 
     for i, (name, lam) in enumerate(zip(feature_names, lambdas), 1):
