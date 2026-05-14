@@ -140,7 +140,7 @@ def ode_system(z: list[float], _t: float, params: SystemParams) -> list[float]:
 
 def integrate(
     params: SystemParams,
-    t_max: float = 100.0,
+    t_max: float = 5000.0,
     n_steps: int = 5000,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Integrate the ODE from (z1_0, z2_0) and return (t, solution)."""
@@ -159,7 +159,7 @@ def plot_phase_portrait(
     y_range: tuple[float, float] = (0, 1.0),
     n_grid: int = 12,
     arrow_grid: int = 15,
-    t_max: float = 50.0,
+    t_max: float = 5000.0,
     n_steps: int = 2000,
     extra_curves: Optional[list[tuple[np.ndarray, np.ndarray, str, str]]] = None,
 ) -> tuple[plt.Figure, plt.Axes]:
@@ -315,7 +315,7 @@ def plot_decision_boundary(
     n_points: int = 200,
     save_path: Optional[Path] = None,
     ax: Optional[plt.Axes] = None,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Plot the J1 = J2 decision boundary in (z1, z2) space.
 
@@ -372,7 +372,13 @@ def plot_decision_boundary(
         ax.contour(Z1, Z2, J_diff, levels=np.linspace(J_min, J_max, 11),
                    colors="gray", linewidths=0.5, alpha=0.5)
 
-    J0 = compute_J_difference(params.z1_0, params.z2_0, params, lambdas)
+    J0 = compute_J_difference(
+        params.z1_0,
+        params.z2_0,
+        params,
+        lambdas,
+        intercept
+    )
     ax.plot(
         params.z1_0, params.z2_0, "go", markersize=10,
         label=(
@@ -415,7 +421,7 @@ def plot_decision_boundary(
 
 def plot_trajectory(
     params: SystemParams,
-    t_max: float = 100.0,
+    t_max: float = 5000.0,
     n_steps: int = 5000,
 ) -> None:
     """Plot z1(t), z2(t) and the phase-space trajectory."""
@@ -489,7 +495,7 @@ DEFAULT_PARAMS = SystemParams(
 
 def main() -> None:
     file_path = Path("Data/TestData.txt")
-    selected_line = 442 # 1 -> 3 в файле, 21 -> 23 в файле...: из номера строки в файле надо вычитать 2.
+    selected_line = 12 # 1 -> 3 в файле, 21 -> 23 в файле...: из номера строки в файле надо вычитать 2.
 
     # --- load parameters ---
     params = DEFAULT_PARAMS
@@ -520,7 +526,7 @@ def main() -> None:
         x_range=z1_range,
         y_range=z2_range,
         n_grid=10,
-        t_max=50,
+        t_max=10000,
         # extra_curves=extra,
     )
 
@@ -541,7 +547,7 @@ def main() -> None:
 
     # --- time-series + trajectory ---
     print("\nBuilding trajectory …")
-    #plot_trajectory(params, t_max=100.0, n_steps=5000)
+    #plot_trajectory(params, t_max=1000.0, n_steps=5000)
 
     # --- decision boundary ---
     print("\nBuilding J1 = J2 decision boundary …")
