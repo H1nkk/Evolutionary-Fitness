@@ -1,3 +1,6 @@
+from Types import Coefficients
+from LearningDataGenerator import generate_learning_data
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -49,9 +52,40 @@ def make_poly_features(df, suffix='1'):
 
     return pd.DataFrame(features)
 
-def get_data(path : str, test_part : int) -> tuple:
+def get_data_from_file(path : str, test_part : int) -> tuple:
     column_names = ['Winner ID', 'h1', 'h2', 's1', 's2', 'a1', 'a2', 'b1', 'b2', 'z1_0', 'z2_0']
     data = pd.read_csv(path, sep="|", skipinitialspace=True, comment='#', names=column_names, header=None)
+    
+    poly1 = make_poly_features(data, suffix='1')
+    poly2 = make_poly_features(data, suffix='2')
+    X_diff = poly1 - poly2 
+    
+    scaler = StandardScaler()
+    X_diff = pd.DataFrame(
+        scaler.fit_transform(X_diff),
+        columns=X_diff.columns
+    )
+    y = data['Winner ID'].values
+    
+    X_train = X_diff.iloc[test_part:]
+    y_train = y[test_part:]
+    X_test = X_diff.iloc[:test_part]
+    y_test = y[:test_part]
+    
+    return X_train, y_train, X_test, y_test
+
+def convert_data(learning_data : list[tuple[bool, Coefficients]], test_part : int) -> tuple:
+    data_rows = []
+    
+    for ld in learning_data:
+        row = {
+            'Winner ID' : ld[0], 'h1' : ld[1].h1, 'h2' : ld[1].h2, 's1' : ld[1].s1, 's2' : ld[1].s2, 
+            'a1' : ld[1].a1, 'a2' : ld[1].a2, 'b1' : ld[1].b1, 'b2' : ld[1].b2, 'z1_0' : ld[1].z1_0, 'z2_0' : ld[1].z2_0
+        }
+        data_rows.append(row)
+    
+    data = pd.DataFrame(data_rows)
+    
     poly1 = make_poly_features(data, suffix='1')
     poly2 = make_poly_features(data, suffix='2')
     X_diff = poly1 - poly2 
@@ -128,13 +162,23 @@ def plot_decision_boundary_pca(model, X_train, y_train):
     plt.tight_layout()
     plt.savefig("Plots/decision_boundary_pca.png", dpi=150)
     plt.show()
+    
+
+def run_learning(num_data : int = 1000, max_time : float = 500, test_num : int = 500):
+    X_train, y_train, X_test, y_test = convert_data(generate_learning_data(num_data, max_time), test_num)
+    model, lambdas = get_lambdas(X_train, y_train, X_test, y_test)
+    return X_train, y_train, model, lambdas
+
+def get_learning_lambdas(num_data : int = 1000, max_time : float = 500, test_num : int = 500):
+    X_train, y_train, model, lambdas = run_learning(num_data, max_time, test_num)
+    return lambdas
 
 if __name__ == "__main__":
     os.makedirs("Plots", exist_ok=True)
-    X_train, y_train, X_test, y_test = get_data("Data/LearningData2.txt", 500)
-
-    model, lambdas = get_lambdas(X_train, y_train, X_test, y_test)
-
+    # X_train, y_train, X_test, y_test = get_data_from_file("Data/LearningData2.txt", 500)
+    
+    X_train, y_train, model, lambdas = run_learning(1000, 500, 500)
+    
     print("Найденные коэффициенты λ:")
 
     feature_names = [
