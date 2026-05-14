@@ -74,44 +74,99 @@ def get_data_from_file(path : str, test_part : int) -> tuple:
     
     return X_train, y_train, X_test, y_test
 
-def convert_data(learning_data : list[tuple[bool, Coefficients]], test_part : int) -> tuple:
+def convert_data(
+    learning_data: list[tuple[bool, Coefficients]],
+    test_part: int
+):
     data_rows = []
-    
+
     for ld in learning_data:
         row = {
-            'Winner ID' : ld[0], 'h1' : ld[1].h1, 'h2' : ld[1].h2, 's1' : ld[1].s1, 's2' : ld[1].s2, 
-            'a1' : ld[1].a1, 'a2' : ld[1].a2, 'b1' : ld[1].b1, 'b2' : ld[1].b2, 'z1_0' : ld[1].z1_0, 'z2_0' : ld[1].z2_0
+            'Winner ID': ld[0],
+            'h1': ld[1].h1,
+            'h2': ld[1].h2,
+            's1': ld[1].s1,
+            's2': ld[1].s2,
+            'a1': ld[1].a1,
+            'a2': ld[1].a2,
+            'b1': ld[1].b1,
+            'b2': ld[1].b2,
+            'z1_0': ld[1].z1_0,
+            'z2_0': ld[1].z2_0
         }
+
         data_rows.append(row)
-    
+
     data = pd.DataFrame(data_rows)
-    
+
     poly1 = make_poly_features(data, suffix='1')
     poly2 = make_poly_features(data, suffix='2')
-    X_diff = poly1 - poly2 
-    
+
+    X_diff = poly1 - poly2
+
     scaler = StandardScaler()
-    X_diff = pd.DataFrame(
+
+    X_scaled = pd.DataFrame(
         scaler.fit_transform(X_diff),
         columns=X_diff.columns
     )
+
     y = data['Winner ID'].values
-    
-    X_train = X_diff.iloc[test_part:]
+
+    X_train = X_scaled.iloc[test_part:]
     y_train = y[test_part:]
-    X_test = X_diff.iloc[:test_part]
+
+    X_test = X_scaled.iloc[:test_part]
     y_test = y[:test_part]
+
+    return (
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        scaler
+    )
     
-    return X_train, y_train, X_test, y_test
-    
-def get_lambdas(X_train, y_train, X_test, y_test):
-    model = LinearSVC(C=1.0, random_state=42, max_iter=10000)
+def get_lambdas(
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    scaler
+):
+    model = LinearSVC(
+        C=1.0,
+        random_state=42,
+        max_iter=10000
+    )
+
     model.fit(X_train, y_train)
+
     y_pred = model.predict(X_test)
+
     accuracy = accuracy_score(y_test, y_pred)
-    print(f"\nТочность на тестовых данных: {accuracy:.3f}")
-    lambdas = model.coef_[0]
-    return model, lambdas
+
+    print(f"\nAccuracy: {accuracy:.3f}")
+
+    # hyperplane in scaled coordinates
+    w_scaled = model.coef_[0]
+    b_scaled = model.intercept_[0]
+
+    # convert to original feature space
+    lambdas = w_scaled / scaler.scale_
+
+    intercept = (
+        b_scaled
+        - np.sum(
+            w_scaled * scaler.mean_ / scaler.scale_
+        )
+    )
+
+    return (
+        model,
+        lambdas,
+        intercept
+    )
     
 def plot_lambdas(lambdas):
     feature_names = [
@@ -164,14 +219,90 @@ def plot_decision_boundary_pca(model, X_train, y_train):
     plt.show()
     
 
-def run_learning(num_data : int = 1000, max_time : float = 500, test_num : int = 500):
-    X_train, y_train, X_test, y_test = convert_data(generate_learning_data(num_data, max_time), test_num)
-    model, lambdas = get_lambdas(X_train, y_train, X_test, y_test)
-    return X_train, y_train, model, lambdas
+def run_learning(
+    num_data: int = 1000,
+    max_time: float = 500,
+    test_num: int = 500
+):
+    (
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        scaler
+    ) = convert_data(
+        generate_learning_data(num_data, max_time),
+        test_num
+    )
 
-def get_learning_lambdas(num_data : int = 1000, max_time : float = 500, test_num : int = 500):
-    X_train, y_train, model, lambdas = run_learning(num_data, max_time, test_num)
-    return lambdas
+    (
+        model,
+        lambdas,
+        intercept
+    ) = get_lambdas(
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        scaler
+    )
+
+    # =========================================
+    # SANITY CHECK
+    # =========================================
+
+    sample_scaled = X_test.iloc[0].values
+
+    # SVM prediction
+    svm_pred = model.predict([sample_scaled])[0]
+
+    # Convert scaled sample back to original space
+    sample_original = (
+        sample_scaled * scaler.scale_
+        + scaler.mean_
+    )
+
+    # Manual hyperplane evaluation
+    manual_score = (
+        np.dot(lambdas, sample_original)
+        + intercept
+    )
+
+    manual_pred = 1 if manual_score > 0 else 0
+
+    print("\n=== SANITY CHECK ===")
+    print("SVM prediction:    ", svm_pred)
+    print("Manual prediction: ", manual_pred)
+    print("Manual score:      ", manual_score)
+
+    # =========================================
+
+    return (
+        X_train,
+        y_train,
+        model,
+        lambdas,
+        intercept
+    )
+
+def get_learning_lambdas(
+    num_data: int = 1000,
+    max_time: float = 500,
+    test_num: int = 500
+):
+    (
+        X_train,
+        y_train,
+        model,
+        lambdas,
+        intercept
+    ) = run_learning(
+        num_data,
+        max_time,
+        test_num
+    )
+
+    return lambdas, intercept
 
 if __name__ == "__main__":
     os.makedirs("Plots", exist_ok=True)

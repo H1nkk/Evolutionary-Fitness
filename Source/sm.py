@@ -1,6 +1,7 @@
 from __future__ import annotations
+import scipy as sp
+from dataclasses import dataclass
 
-from MachineLearning import get_learning_lambdas
 
 import traceback
 from dataclasses import dataclass, field
@@ -11,6 +12,322 @@ from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import odeint
+
+
+
+@dataclass
+class Parameters:
+    h1 : float 
+    h2 : float
+    s1 : float
+    s2 : float
+    a1 : float
+    a2 : float
+    b1 : float
+    b2 : float
+    z1_0 : float
+    z2_0 : float
+    r : float
+    p : float
+    q : float
+
+global_iteration_counter = 0
+max_iterations = 10_000
+
+class MaxIterationsReached(Exception):
+    pass
+
+# Defines a sytem of equations that will be solved
+def system(t, z, params : Parameters):
+    
+    # Iteration control
+    global global_iteration_counter
+    global max_iterations
+    
+    global_iteration_counter += 1
+    if (global_iteration_counter >= max_iterations):
+        raise MaxIterationsReached("Max solving iterations exeeded!")
+    
+    """
+    System of differential equations
+    
+    Parameters:
+    t : float - time
+    z : array - [z1, z2]
+    """
+    z1, z2 = z
+    
+    # First equation: dz1/dt
+    term1_z1 = params.r * z1
+    term2_z1 = params.h1 * z1**2
+    term3_z1 = params.s1 * z2 * z1 * (1 + params.b1 * z1 + params.a1 * z2)
+    term4_z1 = params.s2 * z2 * z1 * (1 + params.b2 * z2 + params.a2 * z1)
+    term5_z1 = z1 * (params.q * z1 + params.p * z2)
+    
+    dz1dt = term1_z1 + term2_z1 + term3_z1 - term4_z1 - term5_z1
+    
+    # Second equation: dz2/dt
+    term1_z2 = params.r * z2
+    term2_z2 = params.h2 * z2**2
+    term3_z2 = params.s2 * z2 * z1 * (1 + params.b2 * z2 + params.a2 * z1)
+    term4_z2 = params.s1 * z2 * z1 * (1 + params.b1 * z1 + params.a1 * z2)
+    term5_z2 = z2 * (params.q * z1 + params.p * z2)
+    
+    dz2dt = term1_z2 + term2_z2 + term3_z2 - term4_z2 - term5_z2
+    
+    return [dz1dt, dz2dt]
+
+
+# Solves the population evaluation system of equations
+def solve_population_equation(params : Parameters) -> tuple[float, float]:
+    
+    global global_iteration_counter
+    global_iteration_counter = 0
+    
+    # Set initial conditions
+
+    z0 = [params.z1_0 , params.z2_0]
+
+    # Set time span
+    t_start = 0
+    t_end = 2
+    t_span = (t_start, t_end)
+
+    # Solve the system
+    solution = sp.integrate.solve_ivp(
+        lambda t, z: system(t, z, params),
+        t_span, 
+        z0,
+        method='RK45',
+        rtol=1e-5,
+        atol=1e-6,
+    )
+    
+    return (solution.y[0][-1], solution.y[1][-1])
+
+
+# Script
+if __name__  == "__main__":
+    
+    # Constants
+    r = 0.01
+    p = 0.3
+    q = 0.3
+
+    with open("Data/TestData.txt") as f:
+
+        lines = f.readlines()
+        i = 0
+        
+        failed = 0
+        won_1 = 0
+        won_2 = 0
+        
+        for line in lines:
+            
+            if line.startswith('#'): continue
+            
+            # h1 | h2 | s1 | s2 | a1 | a2 | b1 | b2
+            h1, h2, s1, s2, a1, a2, b1, b2, z1_0, z2_0 = [float(i) for i in line.split('|')]
+            
+            params = Parameters(h1, h2, s1, s2, a1, a2, b1, b2, z1_0, z2_0, r, p, q)
+            
+            global_iteration_counter = 0
+            try:
+                res_1, res_2 = solve_population_equation(params)
+                
+                won_1 += res_1 > res_2
+                won_2 += res_2 > res_1
+                
+                print(f"{i} : {res_1 > res_2}: {res_1}, {res_2}")
+                
+            except Exception as e:
+                failed += 1
+                print(f"{i} : {str(e)}")
+            i += 1
+                
+        print(f"Won 1 : {won_1}, Won 2 : {won_2}, Failed : {failed}")
+
+
+
+        from TestDataGenerator import generate_test_data
+from DifferentialSolver import solve_population_equation, Parameters
+
+
+def generate_learning_data(num_entries):
+    
+    # Constants
+    r = 0.01
+    p = 0.3
+    q = 0.3
+    
+    with open("Data/LearningData2.txt", 'w') as output:
+        output.write("# Winner ID (0 or 1) | h1 | h2 | s1 | s2 | a1 | a2 | b1 | b2 | z1_0 | z2_0 \n")
+        
+        generate_test_data(num_entries * 2)
+        test_data_file = open("Data/TestData.txt")
+        test_data_lines = test_data_file.readlines()
+        
+        i = 0
+        num_good_entries = 0
+        while(num_good_entries < num_entries):
+            i += 1
+               
+            line = test_data_lines[i] 
+            if line.startswith('#'): continue
+            
+            # h1 | h2 | s1 | s2 | a1 | a2 | b1 | b2 | z1_0 | z2_0
+            h1, h2, s1, s2, a1, a2, b1, b2, z1_0, z2_0 = [float(i) for i in line.split('|')]
+            
+            params = Parameters(h1, h2, s1, s2, a1, a2, b1, b2, z1_0, z2_0, r, p, q)
+            try:
+                res_1, res_2 = solve_population_equation(params)
+                num_good_entries += 1
+                output.write(f"{0 if res_1 > res_2 else 1} | {h1} | {h2} | {s1} | {s2} | {a1} | {a2} | {b1} | {b2} | {z1_0} | {z2_0}\n")
+                
+            except:
+                pass
+            
+        test_data_file.close()
+        
+        
+# Script
+if __name__  == "__main__":
+    generate_learning_data(5000)
+
+
+
+    import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.svm import LinearSVC
+from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.model_selection import learning_curve
+from sklearn.decomposition import PCA
+import os
+
+def make_poly_features(df, suffix='1'):
+    h = df[f'h{suffix}'].values
+    s = df[f's{suffix}'].values
+    a = df[f'a{suffix}'].values
+    b = df[f'b{suffix}'].values
+    z = df[f'z{suffix}_0'].values   
+
+    features = {}
+    features['z'] = z 
+    features['h*z'] = h * z
+    features['s*z'] = s * z
+    features['b*z'] = b * z
+    features['a*z'] = a * z
+    features['h^2*z'] = (h**2) * z
+    features['s^2*z'] = (s**2) * z
+    features['b^2*z'] = (b**2) * z
+    features['a^2*z'] = (a**2) * z
+    features['h*s*z'] = h * s * z
+    features['h*b*z'] = h * b * z
+    features['h*a*z'] = h * a * z
+    features['s*b*z'] = s * b * z
+    features['s*a*z'] = s * a * z
+    features['a*b*z'] = a * b * z
+
+    return pd.DataFrame(features)
+
+def get_data(path : str, test_part : int) -> tuple:
+    column_names = ['Winner ID', 'h1', 'h2', 's1', 's2', 'a1', 'a2', 'b1', 'b2', 'z1_0', 'z2_0']
+    data = pd.read_csv(path, sep="|", skipinitialspace=True, comment='#', names=column_names, header=None)
+    poly1 = make_poly_features(data, suffix='1')
+    poly2 = make_poly_features(data, suffix='2')
+    X_diff = poly1 - poly2 
+    y = data['Winner ID'].values
+    
+    X_train = X_diff.iloc[test_part:]
+    y_train = y[test_part:]
+    X_test = X_diff.iloc[:test_part]
+    y_test = y[:test_part]
+    
+    return X_train, y_train, X_test, y_test
+    
+def get_lambdas(X_train, y_train, X_test, y_test):
+    model = LinearSVC(C=1.0, random_state=42, max_iter=10000)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    print(f"\nТочность на тестовых данных: {accuracy:.3f}")
+    lambdas = model.coef_[0]
+    return model, lambdas
+    
+def plot_lambdas(lambdas):
+    feature_names = [
+        "z", "h*z", "s*z", "b*z", "a*z",
+        "h^2*z", "s^2*z", "b^2*z", "a^2*z",
+        "h*s*z", "h*b*z", "h*a*z", "s*b*z", "s*a*z", "a*b*z"
+    ]
+
+    colors = ['steelblue' if v >= 0 else 'tomato' for v in lambdas]
+
+    plt.figure(figsize=(10, 6))
+    bars = plt.barh(feature_names, lambdas, color=colors)
+    plt.axvline(0, color='black', linewidth=0.8)
+    plt.xlabel("Значение λ")
+    plt.title("Коэффициенты модели (λ)")
+    plt.tight_layout()
+    plt.savefig("Plots/lambdas.png", dpi=150)
+    plt.show()   
+    
+def plot_decision_boundary_pca(model, X_train, y_train):
+    pca = PCA(n_components=2)
+    X_2d = pca.fit_transform(X_train)
+
+    model_2d = LinearSVC(C=1.0, random_state=42, max_iter=10000)
+    model_2d.fit(X_2d, y_train)
+
+    x_min, x_max = X_2d[:, 0].min() - 1, X_2d[:, 0].max() + 1
+    y_min, y_max = X_2d[:, 1].min() - 1, X_2d[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 300), np.linspace(y_min, y_max, 300))
+
+    Z = model_2d.decision_function(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+
+    plt.figure(figsize=(8, 6))
+    plt.contourf(xx, yy, Z, levels=0, alpha=0.2, colors=['tomato', 'steelblue'])
+    plt.contour(xx, yy, Z, levels=0, colors='black', linewidths=1.5) 
+    plt.contour(xx, yy, Z, levels=[-1, 1], colors='black', linewidths=0.8, linestyles='--')
+
+    plt.scatter(X_2d[y_train == 0, 0], X_2d[y_train == 0, 1], c='tomato', s=10, alpha=0.5)
+    plt.scatter(X_2d[y_train == 1, 0], X_2d[y_train == 1, 1], c='steelblue', s=10, alpha=0.5)
+
+    plt.xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.1f}%)")
+    plt.ylabel(f"PC2 ({pca.explained_variance_ratio_[1]*100:.1f}%)")
+    plt.title("Граница решения SVM (PCA 2D)")
+    plt.tight_layout()
+    plt.savefig("Plots/decision_boundary_pca.png", dpi=150)
+    plt.show()
+
+if __name__ == "__main__":
+    os.makedirs("Plots", exist_ok=True)
+    X_train, y_train, X_test, y_test = get_data("Data/LearningData.txt", 500)
+
+    model, lambdas = get_lambdas(X_train, y_train, X_test, y_test)
+
+    print("Найденные коэффициенты λ:")
+
+    feature_names = [
+        "z", "h*z", "s*z", "b*z", "a*z",
+        "h^2*z", "s^2*z", "b^2*z", "a^2*z",
+        "h*s*z", "h*b*z", "h*a*z", "s*b*z", "s*a*z", "a*b*z"
+    ]
+
+    for i, (name, lam) in enumerate(zip(feature_names, lambdas), 1):
+        print(f"λ_{i:2d}  {name:5s} = {lam:.6f}")
+
+    plot_lambdas(lambdas=lambdas)
+    plot_decision_boundary_pca(model, X_train, y_train)
+
+
+    """
+Simulation of a two-player dynamical system with phase portrait
+and SVM-based decision boundary visualization.
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -246,7 +563,7 @@ def plot_phase_portrait(
 # ---------------------------------------------------------------------------
 
 def _build_features(z: float, h: float, s: float, a: float, b: float) -> np.ndarray:
-    """Return the 25-dimensional feature vector φ(z) for one player."""
+    """Return the 15-dimensional feature vector φ(z) for one player."""
     return np.array([
         z,
         h * z,
@@ -263,59 +580,24 @@ def _build_features(z: float, h: float, s: float, a: float, b: float) -> np.ndar
         s * b * z,
         s * a * z,
         a * b * z,
-        h*z**2, 
-        s*z**2, 
-        a*z**2, 
-        b*z**2, 
-        z**2,   
-        h*z**3, 
-        s*z**3, 
-        a*z**3, 
-        b*z**3, 
-        z**3
     ])
 
 
-def compute_J_difference(
-    z1: float,
-    z2: float,
-    params: SystemParams,
-    lambdas: np.ndarray,
-    intercept: float
-) -> float:
-
-    phi1 = _build_features(
-        z1,
-        params.h1,
-        params.s1,
-        params.a1,
-        params.b1
-    )
-
-    phi2 = _build_features(
-        z2,
-        params.h2,
-        params.s2,
-        params.a2,
-        params.b2
-    )
-
-    x = phi1 - phi2
-
-    return float(
-        np.dot(lambdas, x) + intercept
-    )
+def compute_J_difference(z1: float, z2: float, params: SystemParams, lambdas: np.ndarray) -> float:
+    """Return J1(z1) − J2(z2) = Σ λᵢ · (φᵢ(z1) − φᵢ(z2))."""
+    phi1 = _build_features(z1, params.h1, params.s1, params.a1, params.b1)
+    phi2 = _build_features(z2, params.h2, params.s2, params.a2, params.b2)
+    return float(np.dot(lambdas, phi1 - phi2))
 
 
 def plot_decision_boundary(
     params: SystemParams,
     lambdas: np.ndarray,
-    intercept: float,
     z_range: tuple[float, float] = (-1.0, 1.0),
     n_points: int = 200,
     save_path: Optional[Path] = None,
     ax: Optional[plt.Axes] = None,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Plot the J1 = J2 decision boundary in (z1, z2) space.
 
@@ -326,16 +608,9 @@ def plot_decision_boundary(
     z_lin = np.linspace(*z_range, n_points)
     Z1, Z2 = np.meshgrid(z_lin, z_lin)
 
-    J_diff = np.vectorize(
-    compute_J_difference,
-    excluded=["params", "lambdas", "intercept"]
-)(
-    Z1,
-    Z2,
-    params=params,
-    lambdas=lambdas,
-    intercept=intercept
-)
+    J_diff = np.vectorize(compute_J_difference, excluded=["params", "lambdas"])(
+        Z1, Z2, params=params, lambdas=lambdas
+    )
 
     J_min, J_max = J_diff.min(), J_diff.max()
     has_zero = J_min < 0 < J_max
@@ -448,31 +723,21 @@ def plot_trajectory(
 # ---------------------------------------------------------------------------
 
 LAMBDAS = np.array([
-    -2.757248,
-    -0.584375,
-    -0.816353,
-    -0.181098,
-    -0.559748,
-    -0.427462,
-    -1.505800,
-    0.460905,
-    -0.102692,
-    -0.403703,
-    -0.323300,
-    0.388930,
-    -0.736412,
-    -1.010930,
-    -0.684573,
-    0.521263,
-    0.147172,
-    0.483578,
-    0.365665,
-    -0.073846,
-    0.291560,
-    0.537558,
-    -0.173606,
-    1.152286,
-    0.277632
+    -1.556934,  # z
+    -0.262720,  # h·z
+    -1.357067,  # s·z
+    -0.776056,  # b·z
+     0.060307,  # a·z
+    -0.747607,  # h²·z
+    -2.852803,  # s²·z
+     0.722513,  # b²·z
+    -0.368630,  # a²·z
+    -0.682593,  # h·s·z
+    -0.147188,  # h·b·z
+     0.853914,  # h·a·z
+    -1.417331,  # s·b·z
+    -2.272474,  # s·a·z
+    -1.608936,  # a·b·z
 ])
 
 DEFAULT_PARAMS = SystemParams(
@@ -489,7 +754,7 @@ DEFAULT_PARAMS = SystemParams(
 
 def main() -> None:
     file_path = Path("Data/TestData.txt")
-    selected_line = 442 # 1 -> 3 в файле, 21 -> 23 в файле...: из номера строки в файле надо вычитать 2.
+    selected_line = 310 # 1 -> 3 в файле, 21 -> 23 в файле...: из номера строки в файле надо вычитать 2.
 
     # --- load parameters ---
     params = DEFAULT_PARAMS
@@ -512,7 +777,7 @@ def main() -> None:
 
     z_range = (
         0,
-        2,
+        1,
     )
 
     fig, ax = plot_phase_portrait(
@@ -525,12 +790,9 @@ def main() -> None:
     )
 
     # overlay J1-J2 boundary on the same axes
-    lambdas, intercept = get_learning_lambdas()
-
     plot_decision_boundary(
-    params,
-    lambdas,
-    intercept,
+        params,
+        LAMBDAS,
         z_range=z_range,
         n_points=300,
         save_path=Path("Plots/decision_boundary_J1_J2.png"),
@@ -541,7 +803,7 @@ def main() -> None:
 
     # --- time-series + trajectory ---
     print("\nBuilding trajectory …")
-    #plot_trajectory(params, t_max=100.0, n_steps=5000)
+    plot_trajectory(params, t_max=100.0, n_steps=5000)
 
     # --- decision boundary ---
     print("\nBuilding J1 = J2 decision boundary …")
@@ -553,3 +815,32 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+    import numpy as np
+
+def generate_test_data(num_entries : int):
+    
+    with open("Data/TestData.txt", 'w') as f:
+        
+        rand_h1 = np.random.rand(num_entries)
+        rand_h2 = np.random.rand(num_entries)
+        
+        rand_s1 = np.random.rand(num_entries)
+        rand_s2 = np.random.rand(num_entries)
+        
+        rand_a1 = np.random.rand(num_entries)
+        rand_a2 = np.random.rand(num_entries)
+        
+        rand_b1 = np.random.rand(num_entries)
+        rand_b2 = np.random.rand(num_entries)
+
+        rand_z1_0 = np.random.rand(num_entries)
+        rand_z2_0 = np.random.rand(num_entries)
+
+
+        
+        f.write("# h1 | h2 | s1 | s2 | a1 | a2 | b1 | b2 | z1_0 | z2_0\n")
+        for i in range(num_entries):
+            line = f"{rand_h1[i]} | {rand_h2[i]} | {rand_s1[i]} | {rand_s2[i]} | {rand_a1[i]} | {rand_a2[i]} | {rand_b1[i]} | {rand_b2[i]} | {rand_z1_0[i]} | {rand_z2_0[i]}\n"
+            f.write(line)
+        
