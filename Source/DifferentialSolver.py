@@ -1,21 +1,7 @@
 import scipy as sp
 from dataclasses import dataclass
+from Types import Parameters
 
-@dataclass
-class Parameters:
-    h1 : float 
-    h2 : float
-    s1 : float
-    s2 : float
-    a1 : float
-    a2 : float
-    b1 : float
-    b2 : float
-    z1_0 : float
-    z2_0 : float
-    r : float
-    p : float
-    q : float
 
 global_iteration_counter = 0
 max_iterations = 10_000
