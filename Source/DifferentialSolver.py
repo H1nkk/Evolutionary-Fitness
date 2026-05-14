@@ -1,21 +1,8 @@
 import scipy as sp
 from dataclasses import dataclass
+from Types import Parameters
+import numpy as np
 
-@dataclass
-class Parameters:
-    h1 : float 
-    h2 : float
-    s1 : float
-    s2 : float
-    a1 : float
-    a2 : float
-    b1 : float
-    b2 : float
-    z1_0 : float
-    z2_0 : float
-    r : float
-    p : float
-    q : float
 
 global_iteration_counter = 0
 max_iterations = 10_000
@@ -23,73 +10,110 @@ max_iterations = 10_000
 class MaxIterationsReached(Exception):
     pass
 
-# Defines a sytem of equations that will be solved
-def system(t, z, params : Parameters):
+# # Defines a sytem of equations that will be solved
+# def system(t, z, params : Parameters):
     
-    # Iteration control
-    global global_iteration_counter
-    global max_iterations
+#     # Iteration control
+#     global global_iteration_counter
+#     global max_iterations
     
-    global_iteration_counter += 1
-    if (global_iteration_counter >= max_iterations):
-        raise MaxIterationsReached("Max solving iterations exeeded!")
+#     global_iteration_counter += 1
+#     if (global_iteration_counter >= max_iterations):
+#         raise MaxIterationsReached("Max solving iterations exeeded!")
     
+#     """
+#     System of differential equations
+    
+#     Parameters:
+#     t : float - time
+#     z : array - [z1, z2]
+#     """
+#     z1, z2 = z
+    
+#     # First equation: dz1/dt
+#     term1_z1 = params.r * z1
+#     term2_z1 = params.h1 * z1**2
+#     term3_z1 = params.s1 * z2 * z1 * (1 + params.b1 * z1 + params.a1 * z2)
+#     term4_z1 = params.s2 * z2 * z1 * (1 + params.b2 * z2 + params.a2 * z1)
+#     term5_z1 = z1 * (params.q * z1 + params.p * z2)
+    
+#     dz1dt = term1_z1 + term2_z1 + term3_z1 - term4_z1 - term5_z1
+    
+#     # Second equation: dz2/dt
+#     term1_z2 = params.r * z2
+#     term2_z2 = params.h2 * z2**2
+#     term3_z2 = params.s2 * z2 * z1 * (1 + params.b2 * z2 + params.a2 * z1)
+#     term4_z2 = params.s1 * z2 * z1 * (1 + params.b1 * z1 + params.a1 * z2)
+#     term5_z2 = z2 * (params.q * z1 + params.p * z2)
+    
+#     dz2dt = term1_z2 + term2_z2 + term3_z2 - term4_z2 - term5_z2
+    
+#     return [dz1dt, dz2dt]
+
+def ode_system(z: list[float], _t: float, params: Parameters) -> list[float]:
     """
-    System of differential equations
-    
-    Parameters:
-    t : float - time
-    z : array - [z1, z2]
+    Right-hand side of the two-player ODE:
+
+        dz1/dt = r*z1 + h1*z1² + (s1 - s2)*z1*z2 * (cross terms) - z1*(q*z1 + p*z2)
+        dz2/dt = symmetric counterpart for player 2
     """
     z1, z2 = z
-    
-    # First equation: dz1/dt
-    term1_z1 = params.r * z1
-    term2_z1 = params.h1 * z1**2
-    term3_z1 = params.s1 * z2 * z1 * (1 + params.b1 * z1 + params.a1 * z2)
-    term4_z1 = params.s2 * z2 * z1 * (1 + params.b2 * z2 + params.a2 * z1)
-    term5_z1 = z1 * (params.q * z1 + params.p * z2)
-    
-    dz1dt = term1_z1 + term2_z1 + term3_z1 - term4_z1 - term5_z1
-    
-    # Second equation: dz2/dt
-    term1_z2 = params.r * z2
-    term2_z2 = params.h2 * z2**2
-    term3_z2 = params.s2 * z2 * z1 * (1 + params.b2 * z2 + params.a2 * z1)
-    term4_z2 = params.s1 * z2 * z1 * (1 + params.b1 * z1 + params.a1 * z2)
-    term5_z2 = z2 * (params.q * z1 + params.p * z2)
-    
-    dz2dt = term1_z2 + term2_z2 + term3_z2 - term4_z2 - term5_z2
-    
-    return [dz1dt, dz2dt]
+
+    common = z1 * z2
+    cross1 = 1.0 + params.b1 * z1 + params.a1 * z2
+    cross2 = 1.0 + params.b2 * z2 + params.a2 * z1
+    drain = params.q * z1 + params.p * z2
+
+    dz1 = (
+        params.r * z1
+        + params.h1 * z1 ** 2
+        + params.s1 * common * cross1
+        - params.s2 * common * cross2
+        - z1 * drain
+    )
+    dz2 = (
+        params.r * z2
+        + params.h2 * z2 ** 2
+        + params.s2 * common * cross2
+        - params.s1 * common * cross1
+        - z2 * drain
+    )
+
+    if any(not np.isfinite(v) for v in (dz1, dz2)):
+        return [0.0, 0.0]
+
+    return [dz1, dz2]
 
 
 # Solves the population evaluation system of equations
-def solve_population_equation(params : Parameters) -> tuple[float, float]:
+def solve_population_equation(params : Parameters, t_max : float = 500) -> tuple[float, float]:
     
     global global_iteration_counter
     global_iteration_counter = 0
     
     # Set initial conditions
 
-    z0 = [params.z1_0 , params.z2_0]
+    # z0 = [params.z1_0 , params.z2_0]
 
     # Set time span
-    t_start = 0
-    t_end = 2
-    t_span = (t_start, t_end)
+    # t_start = 0
+    #t_end = 2
+    #t_span = (t_start, t_end)
+
+    density = 10
+    t = np.linspace(0, t_max, t_max * density)
 
     # Solve the system
-    solution = sp.integrate.solve_ivp(
-        lambda t, z: system(t, z, params),
-        t_span, 
-        z0,
-        method='RK45',
-        rtol=1e-5,
-        atol=1e-6,
-    )
-    
-    return (solution.y[0][-1], solution.y[1][-1])
+    solution = sp.integrate.odeint(ode_system, [params.z1_0, params.z2_0], t, args=(params,))
+    # solution = sp.integrate.solve_ivp(
+    #     lambda t, z: system(t, z, params),
+    #     t_span, 
+    #     z0,
+    #     method='RK45',
+    #     rtol=1e-5,
+    #     atol=1e-6,
+    # )
+    return (solution[-1][0], solution[-1][1])
 
 
 # Script
