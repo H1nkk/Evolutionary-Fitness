@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from MachineLearning import get_learning_lambdas
+
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -493,7 +495,7 @@ def main() -> None:
     # overlay J1-J2 boundary on the same axes
     plot_decision_boundary(
         params,
-        LAMBDAS,
+        get_learning_lambdas(),
         z_range=z_range,
         n_points=300,
         save_path=Path("Plots/decision_boundary_J1_J2.png"),

@@ -3,30 +3,28 @@ from Types import Coefficients, Parameters
 from TestDataGenerator import generate_coefficients
 from DifferentialSolver import solve_population_equation
 
-def generate_learning_data(num_entries):
-    
+def generate_learning_data(num_entries, t_max : float = 500):
+
     # Constants
     r = 0.01
     p = 0.3
     q = 0.3
     
     # Output
-    res : list[tuple[bool, Coefficients]] = []
+    res : list[tuple[int, Coefficients]] = []
     
     while (len(res) < num_entries):
         coefficients = generate_coefficients(num_entries)
         for c in coefficients:
-            try:
-                params = Parameters.from_coefficients(c, r, p, q)
-                res_1, res_2 = solve_population_equation(params)
-                
-                res.append((0 if res_1 > res_2 else 1, c))
-            except: pass
+            params = Parameters.from_coefficients(c, r, p, q)
+            print(len(res))
+            res_1, res_2 = solve_population_equation(params, t_max)
+            res.append((0 if res_1 > res_2 else 1, c))
             
     return res
                
         
-def write_learning_data(data : list[tuple[bool, Coefficients]]):
+def write_learning_data(data : list[tuple[int, Coefficients]]):
     with open("Data/LearningData2.txt", 'w') as output:
         output.write("# Winner ID (0 or 1) | h1 | h2 | s1 | s2 | a1 | a2 | b1 | b2 | z1_0 | z2_0 \n")
         
