@@ -21,20 +21,26 @@ $$
 
 $$
 \begin{aligned}
-J(z_{1_0}, h_1, s_1, a_1, b_1) = \\
-&+ \lambda_1 z_{1_0} + \lambda_2 h_1 z_{1_0} + \lambda_3 s_1 z_{1_0} + \lambda_4 b_1 z_{1_0} + \lambda_5 a_1 z_{1_0} \\
+J(z_{1_0}, h_1, s_1, a_1, b_1) = 
+&+ \lambda_1 z_{1_0} \\
+&+ \lambda_2 h_1 z_{1_0} + \lambda_3 s_1 z_{1_0} + \lambda_4 b_1 z_{1_0} + \lambda_5 a_1 z_{1_0} \\
 &+ \lambda_6 h_1^2 z_{1_0} + \lambda_7 s_1^2 z_{1_0} + \lambda_8 b_1^2 z_{1_0} + \lambda_9 a_1^2 z_{1_0} \\
-&+ \lambda_{10} h_1 s_1 z_{1_0} + \lambda_{11} h_1 b_1 z_{1_0} + \lambda_{12} h_1 a_1 z_{1_0}  \\
+&+ \lambda_{10} h_1 s_1 z_{1_0} + \lambda_{11} h_1 b_1 z_{1_0} + \lambda_{12} h_1 a_1 z_{1_0} \\
 &+ \lambda_{13} s_1 b_1 z_{1_0} + \lambda_{14} s_1 a_1 z_{1_0} + \lambda_{15} a_1 b_1 z_{1_0} \\
+&+ \lambda_{16} h_1 z_{1_0}^2 + \lambda_{17} s_1 z_{1_0}^2 + \lambda_{18} a_1 z_{1_0}^2 + \lambda_{19} b_1 z_{1_0}^2 + \lambda_{20} z_{1_0}^2 \\
+&+ \lambda_{21} h_1 z_{1_0}^3 + \lambda_{22} s_1 z_{1_0}^3 + \lambda_{23} a_1 z_{1_0}^3 + \lambda_{24} b_1 z_{1_0}^3 + \lambda_{25} z_{1_0}^3
 \end{aligned}
 $$
 
 $$
 \begin{aligned}
-J(z_{2_0}, h_2, s_2, a_2, b_2)  = \\
-&+ \lambda_1 z_{2_0} + \lambda_2 h_2 z_{2_0} + \lambda_3 s_2 z_{2_0} + \lambda_4 b_2 z_{2_0} + \lambda_5 a_2 z_{2_0} \\
+J(z_{2_0}, h_2, s_2, a_2, b_2) = 
+&+ \lambda_1 z_{2_0} \\
+&+ \lambda_2 h_2 z_{2_0} + \lambda_3 s_2 z_{2_0} + \lambda_4 b_2 z_{2_0} + \lambda_5 a_2 z_{2_0} \\
 &+ \lambda_6 h_2^2 z_{2_0} + \lambda_7 s_2^2 z_{2_0} + \lambda_8 b_2^2 z_{2_0} + \lambda_9 a_2^2 z_{2_0} \\
-&+ \lambda_{10} h_2 s_2 z_{2_0} + \lambda_{11} h_2 b_2 z_{2_0} + \lambda_{12} h_2 a_2 z_{2_0}  \\
+&+ \lambda_{10} h_2 s_2 z_{2_0} + \lambda_{11} h_2 b_2 z_{2_0} + \lambda_{12} h_2 a_2 z_{2_0} \\
 &+ \lambda_{13} s_2 b_2 z_{2_0} + \lambda_{14} s_2 a_2 z_{2_0} + \lambda_{15} a_2 b_2 z_{2_0} \\
+&+ \lambda_{16} h_2 z_{2_0}^2 + \lambda_{17} s_2 z_{2_0}^2 + \lambda_{18} a_2 z_{2_0}^2 + \lambda_{19} b_2 z_{2_0}^2 + \lambda_{20} z_{2_0}^2 \\
+&+ \lambda_{21} h_2 z_{2_0}^3 + \lambda_{22} s_2 z_{2_0}^3 + \lambda_{23} a_2 z_{2_0}^3 + \lambda_{24} b_2 z_{2_0}^3 + \lambda_{25} z_{2_0}^3
 \end{aligned}
 $$
